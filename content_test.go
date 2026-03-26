@@ -23,7 +23,7 @@ func TestPopular(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(PopularResponse{
 			Items: []PopularItem{
-				{ID: 1, Title: "The Matrix", ContentType: "movie", ClickCount: 500},
+				{ID: 1, Title: "The Matrix", ContentType: "movie", MaxSeeders: 500},
 			},
 			Total:    100,
 			Page:     2,
@@ -33,7 +33,7 @@ func TestPopular(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	resp, err := c.Popular(context.Background(), 5, 2)
+	resp, err := c.Popular(context.Background(), PopularParams{Limit: 5, Page: 2})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -43,8 +43,8 @@ func TestPopular(t *testing.T) {
 	if len(resp.Items) != 1 {
 		t.Fatalf("len(Items) = %d, want 1", len(resp.Items))
 	}
-	if resp.Items[0].ClickCount != 500 {
-		t.Errorf("ClickCount = %d, want 500", resp.Items[0].ClickCount)
+	if resp.Items[0].MaxSeeders != 500 {
+		t.Errorf("MaxSeeders = %d, want 500", resp.Items[0].MaxSeeders)
 	}
 }
 
@@ -57,6 +57,9 @@ func TestPopular_DefaultParams(t *testing.T) {
 		if q.Has("page") {
 			t.Errorf("unexpected page param: %q", q.Get("page"))
 		}
+		if q.Has("locale") {
+			t.Errorf("unexpected locale param: %q", q.Get("locale"))
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(PopularResponse{Total: 0, Page: 1, PageSize: 12})
@@ -64,7 +67,24 @@ func TestPopular_DefaultParams(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	_, err := c.Popular(context.Background(), 0, 0)
+	_, err := c.Popular(context.Background(), PopularParams{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestPopular_WithLocale(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("locale"); got != "es" {
+			t.Errorf("locale = %q, want es", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(PopularResponse{Total: 0, Page: 1, PageSize: 12})
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	_, err := c.Popular(context.Background(), PopularParams{Locale: "es"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -76,10 +96,11 @@ func TestRecent(t *testing.T) {
 			t.Errorf("path = %q, want /api/v1/recent", r.URL.Path)
 		}
 
+		overview := "A great movie"
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(RecentResponse{
 			Items: []RecentItem{
-				{ID: 10, Title: "New Movie", ContentType: "movie", CreatedAt: "2025-01-15T10:00:00Z"},
+				{ID: 10, Title: "New Movie", ContentType: "movie", Overview: &overview, CreatedAt: "2025-01-15T10:00:00Z"},
 			},
 			Total:    50,
 			Page:     1,
@@ -89,7 +110,7 @@ func TestRecent(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	resp, err := c.Recent(context.Background(), 12, 1)
+	resp, err := c.Recent(context.Background(), RecentParams{Limit: 12, Page: 1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -101,6 +122,26 @@ func TestRecent(t *testing.T) {
 	}
 	if resp.Items[0].CreatedAt != "2025-01-15T10:00:00Z" {
 		t.Errorf("CreatedAt = %q", resp.Items[0].CreatedAt)
+	}
+	if resp.Items[0].Overview == nil || *resp.Items[0].Overview != "A great movie" {
+		t.Errorf("Overview = %v, want 'A great movie'", resp.Items[0].Overview)
+	}
+}
+
+func TestRecent_WithLocale(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("locale"); got != "fr" {
+			t.Errorf("locale = %q, want fr", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(RecentResponse{Total: 0, Page: 1, PageSize: 12})
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	_, err := c.Recent(context.Background(), RecentParams{Locale: "fr"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -182,12 +223,15 @@ func TestCredits(t *testing.T) {
 		}
 
 		director := "Christopher Nolan"
+		directorID := 525
+		tmdbID := 6193
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(CreditsResponse{
-			ContentID: 42,
-			Director:  &director,
+			ContentID:      42,
+			Director:       &director,
+			DirectorTmdbID: &directorID,
 			Cast: []CastMember{
-				{Name: "Leonardo DiCaprio", Character: "Cobb"},
+				{TmdbID: &tmdbID, Name: "Leonardo DiCaprio", Character: "Cobb"},
 			},
 		})
 	}))
@@ -204,11 +248,17 @@ func TestCredits(t *testing.T) {
 	if resp.Director == nil || *resp.Director != "Christopher Nolan" {
 		t.Errorf("Director = %v", resp.Director)
 	}
+	if resp.DirectorTmdbID == nil || *resp.DirectorTmdbID != 525 {
+		t.Errorf("DirectorTmdbID = %v, want 525", resp.DirectorTmdbID)
+	}
 	if len(resp.Cast) != 1 {
 		t.Fatalf("len(Cast) = %d, want 1", len(resp.Cast))
 	}
 	if resp.Cast[0].Name != "Leonardo DiCaprio" {
 		t.Errorf("Name = %q", resp.Cast[0].Name)
+	}
+	if resp.Cast[0].TmdbID == nil || *resp.Cast[0].TmdbID != 6193 {
+		t.Errorf("TmdbID = %v, want 6193", resp.Cast[0].TmdbID)
 	}
 }
 
@@ -226,8 +276,10 @@ func TestStats(t *testing.T) {
 				TMDbEnriched: 45000,
 			},
 			Torrents: TorrentStats{
-				Total:       200000,
-				WithSeeders: 150000,
+				Total:        200000,
+				WithSeeders:  150000,
+				Orphans:      5000,
+				DailyAverage: 1200,
 				BySource: map[string]int{
 					"yts":  50000,
 					"eztv": 30000,
@@ -257,6 +309,12 @@ func TestStats(t *testing.T) {
 	}
 	if resp.Torrents.Total != 200000 {
 		t.Errorf("Total = %d, want 200000", resp.Torrents.Total)
+	}
+	if resp.Torrents.Orphans != 5000 {
+		t.Errorf("Orphans = %d, want 5000", resp.Torrents.Orphans)
+	}
+	if resp.Torrents.DailyAverage != 1200 {
+		t.Errorf("DailyAverage = %d, want 1200", resp.Torrents.DailyAverage)
 	}
 	if resp.Torrents.BySource["yts"] != 50000 {
 		t.Errorf("BySource[yts] = %d, want 50000", resp.Torrents.BySource["yts"])
@@ -324,7 +382,7 @@ func TestPopular_ServerError(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	_, err := c.Popular(context.Background(), 10, 1)
+	_, err := c.Popular(context.Background(), PopularParams{Limit: 10, Page: 1})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -337,7 +395,7 @@ func TestRecent_ServerError(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	_, err := c.Recent(context.Background(), 10, 1)
+	_, err := c.Recent(context.Background(), RecentParams{Limit: 10, Page: 1})
 	if err == nil {
 		t.Fatal("expected error")
 	}

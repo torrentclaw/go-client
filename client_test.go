@@ -446,7 +446,7 @@ func TestDoJSON_InvalidBaseURL(t *testing.T) {
 
 func TestDoRaw_InvalidBaseURL(t *testing.T) {
 	c := NewClient(WithBaseURL("://invalid"), WithRetry(0, 0, 0))
-	_, err := c.doRaw(context.Background(), "/test")
+	_, err := c.doRaw(context.Background(), "/test", nil)
 	if err == nil {
 		t.Fatal("expected error for invalid base URL")
 	}
@@ -514,7 +514,7 @@ func TestDoRaw_ContextCanceledDuringBackoff(t *testing.T) {
 		cancel()
 	}()
 
-	_, err := c.doRaw(ctx, "/test")
+	_, err := c.doRaw(ctx, "/test", nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -533,5 +533,159 @@ func TestWithTimeout_NilHTTPClient(t *testing.T) {
 	}
 	if c.httpClient.Timeout != 10*time.Second {
 		t.Errorf("timeout = %v, want 10s", c.httpClient.Timeout)
+	}
+}
+
+func TestWithBearerToken(t *testing.T) {
+	c := NewClient(WithBearerToken("my-token"))
+	if c.bearerToken != "my-token" {
+		t.Errorf("bearerToken = %q, want my-token", c.bearerToken)
+	}
+}
+
+func TestSetHeaders_BearerToken(t *testing.T) {
+	c := NewClient(WithBearerToken("tok123"))
+	req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	c.setHeaders(req)
+
+	if got := req.Header.Get(headerAuthorization); got != "Bearer tok123" {
+		t.Errorf("Authorization = %q, want %q", got, "Bearer tok123")
+	}
+	if got := req.Header.Get(headerAPIKey); got != "" {
+		t.Errorf("X-API-Key should be empty when bearer token is set, got %q", got)
+	}
+}
+
+func TestSetHeaders_BearerTokenPrecedence(t *testing.T) {
+	c := NewClient(WithAPIKey("api-key"), WithBearerToken("bearer-tok"))
+	req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	c.setHeaders(req)
+
+	if got := req.Header.Get(headerAuthorization); got != "Bearer bearer-tok" {
+		t.Errorf("Authorization = %q, want Bearer bearer-tok", got)
+	}
+	if got := req.Header.Get(headerAPIKey); got != "" {
+		t.Errorf("X-API-Key should be empty when bearer token takes precedence, got %q", got)
+	}
+}
+
+func TestAddBoolParam(t *testing.T) {
+	q := url.Values{}
+	addBoolParam(q, "disabled", false)
+	if q.Has("disabled") {
+		t.Error("false value should not be added")
+	}
+	addBoolParam(q, "enabled", true)
+	if q.Get("enabled") != "true" {
+		t.Errorf("enabled = %q, want true", q.Get("enabled"))
+	}
+}
+
+func TestDoPost_Success(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if got := r.Header.Get("Content-Type"); got != "application/json" {
+			t.Errorf("Content-Type = %q, want application/json", got)
+		}
+		if got := r.Header.Get("Accept"); got != "application/json" {
+			t.Errorf("Accept = %q, want application/json", got)
+		}
+		if got := r.Header.Get("X-Custom"); got != "val" {
+			t.Errorf("X-Custom = %q, want val", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"result":"ok"}`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	var dst struct{ Result string }
+	err := c.doPost(context.Background(), "/test", map[string]string{"key": "value"}, &dst, map[string]string{"X-Custom": "val"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dst.Result != "ok" {
+		t.Errorf("Result = %q, want ok", dst.Result)
+	}
+}
+
+func TestDoPost_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("bad request"))
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	var dst struct{}
+	err := c.doPost(context.Background(), "/test", nil, &dst, nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	apiErr, ok := err.(*APIError)
+	if !ok {
+		t.Fatalf("expected *APIError, got %T", err)
+	}
+	if apiErr.StatusCode != 400 {
+		t.Errorf("StatusCode = %d, want 400", apiErr.StatusCode)
+	}
+}
+
+func TestDoPost_RetryOnTransient(t *testing.T) {
+	attempts := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 2 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(2, 1*time.Millisecond, 10*time.Millisecond))
+	var dst struct{ Ok bool }
+	err := c.doPost(context.Background(), "/test", nil, &dst, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if attempts != 2 {
+		t.Errorf("attempts = %d, want 2", attempts)
+	}
+}
+
+func TestDoPost_InvalidBaseURL(t *testing.T) {
+	c := NewClient(WithBaseURL("://invalid"), WithRetry(0, 0, 0))
+	var dst struct{}
+	err := c.doPost(context.Background(), "/test", nil, &dst, nil)
+	if err == nil {
+		t.Fatal("expected error for invalid base URL")
+	}
+	if !strings.Contains(err.Error(), "invalid base URL") {
+		t.Errorf("error = %q, want to contain 'invalid base URL'", err.Error())
+	}
+}
+
+func TestDoRaw_WithQueryParams(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("t"); got != "caps" {
+			t.Errorf("t = %q, want caps", got)
+		}
+		w.Write([]byte("<xml/>"))
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	q := url.Values{}
+	q.Set("t", "caps")
+	data, err := c.doRaw(context.Background(), "/test", q)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(data) != "<xml/>" {
+		t.Errorf("data = %q, want <xml/>", string(data))
 	}
 }

@@ -56,6 +56,7 @@ func TestSearch(t *testing.T) {
 					Torrents: []TorrentInfo{
 						{
 							InfoHash:  "abc123",
+							RawTitle:  "Inception.2010.1080p",
 							Seeders:   100,
 							Leechers:  10,
 							Source:    "yts",
@@ -113,6 +114,7 @@ func TestSearch_AllParams(t *testing.T) {
 			"min_rating":   "7",
 			"quality":      "2160p",
 			"lang":         "es",
+			"subs":         "en",
 			"audio":        "atmos",
 			"hdr":          "dolby_vision",
 			"sort":         "rating",
@@ -121,6 +123,9 @@ func TestSearch_AllParams(t *testing.T) {
 			"country":      "ES",
 			"locale":       "es",
 			"availability": "available",
+			"verified":     "true",
+			"season":       "3",
+			"episode":      "5",
 		}
 		for key, want := range checks {
 			if got := q.Get(key); got != want {
@@ -143,6 +148,7 @@ func TestSearch_AllParams(t *testing.T) {
 		MinRating:    7,
 		Quality:      "2160p",
 		Language:     "es",
+		Subs:         "en",
 		Audio:        "atmos",
 		HDR:          "dolby_vision",
 		Sort:         "rating",
@@ -151,6 +157,9 @@ func TestSearch_AllParams(t *testing.T) {
 		Country:      "ES",
 		Locale:       "es",
 		Availability: "available",
+		Verified:     true,
+		Season:       3,
+		Episode:      5,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -163,8 +172,7 @@ func TestSearch_EmptyOptionalParams(t *testing.T) {
 		if got := q.Get("q"); got != "matrix" {
 			t.Errorf("q = %q, want matrix", got)
 		}
-		// Optional params should not be present.
-		for _, key := range []string{"type", "genre", "year_min", "year_max", "quality", "lang", "sort", "page", "limit"} {
+		for _, key := range []string{"type", "genre", "year_min", "year_max", "quality", "lang", "subs", "sort", "page", "limit", "verified", "season", "episode"} {
 			if q.Has(key) {
 				t.Errorf("unexpected param %q = %q", key, q.Get(key))
 			}
@@ -182,6 +190,40 @@ func TestSearch_EmptyOptionalParams(t *testing.T) {
 	}
 }
 
+func TestSearch_ParsedSeasonEpisode(t *testing.T) {
+	season := 2
+	episode := 5
+	fuzzy := true
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(SearchResponse{
+			Total:         1,
+			Page:          1,
+			PageSize:      20,
+			ParsedSeason:  &season,
+			ParsedEpisode: &episode,
+			FuzzyMatch:    &fuzzy,
+			Results:       []SearchResult{},
+		})
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	resp, err := c.Search(context.Background(), SearchParams{Query: "breaking bad s02e05"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.ParsedSeason == nil || *resp.ParsedSeason != 2 {
+		t.Errorf("ParsedSeason = %v, want 2", resp.ParsedSeason)
+	}
+	if resp.ParsedEpisode == nil || *resp.ParsedEpisode != 5 {
+		t.Errorf("ParsedEpisode = %v, want 5", resp.ParsedEpisode)
+	}
+	if resp.FuzzyMatch == nil || !*resp.FuzzyMatch {
+		t.Errorf("FuzzyMatch = %v, want true", resp.FuzzyMatch)
+	}
+}
+
 func TestAutocomplete(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/autocomplete" {
@@ -192,14 +234,16 @@ func TestAutocomplete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]AutocompleteSuggestion{
-			{ID: 1, Title: "Inception", ContentType: "movie"},
+		json.NewEncoder(w).Encode(map[string]any{
+			"suggestions": []AutocompleteSuggestion{
+				{ID: 1, Title: "Inception", ContentType: "movie"},
+			},
 		})
 	}))
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	results, err := c.Autocomplete(context.Background(), "incep")
+	results, err := c.Autocomplete(context.Background(), AutocompleteParams{Query: "incep"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -208,6 +252,45 @@ func TestAutocomplete(t *testing.T) {
 	}
 	if results[0].Title != "Inception" {
 		t.Errorf("Title = %q, want Inception", results[0].Title)
+	}
+}
+
+func TestAutocomplete_WithLocale(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("locale"); got != "es" {
+			t.Errorf("locale = %q, want es", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"suggestions": []AutocompleteSuggestion{}})
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	_, err := c.Autocomplete(context.Background(), AutocompleteParams{Query: "test", Locale: "es"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestAutocomplete_WithMovieCount(t *testing.T) {
+	movieCount := 5
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"suggestions": []AutocompleteSuggestion{
+				{ID: 1, Title: "Star Wars", ContentType: "collection", MovieCount: &movieCount},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
+	results, err := c.Autocomplete(context.Background(), AutocompleteParams{Query: "star"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if results[0].MovieCount == nil || *results[0].MovieCount != 5 {
+		t.Errorf("MovieCount = %v, want 5", results[0].MovieCount)
 	}
 }
 
@@ -238,7 +321,7 @@ func TestAutocomplete_ServerError(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	_, err := c.Autocomplete(context.Background(), "test")
+	_, err := c.Autocomplete(context.Background(), AutocompleteParams{Query: "test"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -247,12 +330,12 @@ func TestAutocomplete_ServerError(t *testing.T) {
 func TestAutocomplete_EmptyResults(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]AutocompleteSuggestion{})
+		json.NewEncoder(w).Encode(map[string]any{"suggestions": []AutocompleteSuggestion{}})
 	}))
 	defer srv.Close()
 
 	c := NewClient(WithBaseURL(srv.URL), WithRetry(0, 0, 0))
-	results, err := c.Autocomplete(context.Background(), "zzzzz")
+	results, err := c.Autocomplete(context.Background(), AutocompleteParams{Query: "zzzzz"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

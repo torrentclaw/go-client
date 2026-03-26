@@ -15,5 +15,5 @@ func (c *Client) TorrentDownloadURL(infoHash string) string {
 // returns the raw bytes.
 func (c *Client) GetTorrentFile(ctx context.Context, infoHash string) ([]byte, error) {
 	path := fmt.Sprintf("/api/v1/torrent/%s", infoHash)
-	return c.doRaw(ctx, path)
+	return c.doRaw(ctx, path, nil)
 }

@@ -1,6 +1,7 @@
 package torrentclaw
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 )
 
 // Version is the library version, used in the default User-Agent header.
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 const (
 	defaultBaseURL   = "https://torrentclaw.com"
@@ -24,9 +25,12 @@ const (
 	defaultRetryBaseWait = 1 * time.Second
 	defaultRetryMaxWait  = 30 * time.Second
 
-	headerAPIKey       = "X-API-Key"
-	headerSearchSource = "X-Search-Source"
-	headerUserAgent    = "User-Agent"
+	headerAPIKey         = "X-API-Key"
+	headerAuthorization  = "Authorization"
+	headerSearchSource   = "X-Search-Source"
+	headerUserAgent      = "User-Agent"
+	headerDebridProvider = "X-Debrid-Provider"
+	headerDebridKey      = "X-Debrid-Key"
 
 	searchSource = "go-client"
 )
@@ -35,6 +39,7 @@ const (
 type Client struct {
 	baseURL       string
 	apiKey        string
+	bearerToken   string
 	userAgent     string
 	httpClient    *http.Client
 	maxRetries    int
@@ -53,6 +58,12 @@ func WithBaseURL(u string) Option {
 // WithAPIKey sets the API key sent as the X-API-Key header.
 func WithAPIKey(key string) Option {
 	return func(c *Client) { c.apiKey = key }
+}
+
+// WithBearerToken sets a bearer token sent as the Authorization header.
+// If both WithBearerToken and WithAPIKey are used, the bearer token takes precedence.
+func WithBearerToken(token string) Option {
+	return func(c *Client) { c.bearerToken = token }
 }
 
 // WithUserAgent sets a custom User-Agent header.
@@ -169,12 +180,15 @@ func (c *Client) doJSON(ctx context.Context, path string, query url.Values, dst 
 
 // doRaw performs an HTTP GET request, retries on transient errors, and
 // returns the raw response body bytes.
-func (c *Client) doRaw(ctx context.Context, path string) ([]byte, error) {
+func (c *Client) doRaw(ctx context.Context, path string, query url.Values) ([]byte, error) {
 	u, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("torrentclaw: invalid base URL: %w", err)
 	}
 	u.Path = path
+	if query != nil {
+		u.RawQuery = query.Encode()
+	}
 
 	var lastErr error
 	attempts := 1 + c.maxRetries
@@ -227,7 +241,9 @@ func (c *Client) doRaw(ctx context.Context, path string) ([]byte, error) {
 func (c *Client) setHeaders(req *http.Request) {
 	req.Header.Set(headerUserAgent, c.userAgent)
 	req.Header.Set(headerSearchSource, searchSource)
-	if c.apiKey != "" {
+	if c.bearerToken != "" {
+		req.Header.Set(headerAuthorization, "Bearer "+c.bearerToken)
+	} else if c.apiKey != "" {
 		req.Header.Set(headerAPIKey, c.apiKey)
 	}
 }
@@ -274,4 +290,78 @@ func addStringParam(q url.Values, key, val string) {
 	if val != "" {
 		q.Set(key, val)
 	}
+}
+
+// addBoolParam adds a boolean query parameter if the value is true.
+func addBoolParam(q url.Values, key string, val bool) {
+	if val {
+		q.Set(key, "true")
+	}
+}
+
+// doPost performs an HTTP POST request with a JSON body, retries on transient
+// errors, and decodes the JSON response into dst. Extra headers (e.g. debrid
+// provider credentials) are applied on top of the common headers.
+func (c *Client) doPost(ctx context.Context, path string, body any, dst any, extraHeaders map[string]string) error {
+	u, err := url.Parse(c.baseURL)
+	if err != nil {
+		return fmt.Errorf("torrentclaw: invalid base URL: %w", err)
+	}
+	u.Path = path
+
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("torrentclaw: failed to marshal request body: %w", err)
+	}
+
+	var lastErr error
+	attempts := 1 + c.maxRetries
+	for i := range attempts {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(payload))
+		if err != nil {
+			return fmt.Errorf("torrentclaw: failed to create request: %w", err)
+		}
+		c.setHeaders(req)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		for k, v := range extraHeaders {
+			req.Header.Set(k, v)
+		}
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("torrentclaw: request failed: %w", err)
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			err := json.NewDecoder(resp.Body).Decode(dst)
+			resp.Body.Close()
+			if err != nil {
+				return fmt.Errorf("torrentclaw: failed to decode response: %w", err)
+			}
+			return nil
+		}
+
+		errBody := readErrorBody(resp)
+		resp.Body.Close()
+
+		apiErr := newAPIError(resp.StatusCode, errBody)
+		lastErr = apiErr
+
+		if !apiErr.IsRetryable() || i == attempts-1 {
+			return apiErr
+		}
+
+		wait := c.backoffDuration(i)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(wait):
+		}
+	}
+	return lastErr
 }

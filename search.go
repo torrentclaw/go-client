@@ -17,6 +17,7 @@ func (c *Client) Search(ctx context.Context, params SearchParams) (*SearchRespon
 	addFloatParam(q, "min_rating", params.MinRating)
 	addStringParam(q, "quality", params.Quality)
 	addStringParam(q, "lang", params.Language)
+	addStringParam(q, "subs", params.Subs)
 	addStringParam(q, "audio", params.Audio)
 	addStringParam(q, "hdr", params.HDR)
 	addStringParam(q, "sort", params.Sort)
@@ -25,6 +26,9 @@ func (c *Client) Search(ctx context.Context, params SearchParams) (*SearchRespon
 	addStringParam(q, "country", params.Country)
 	addStringParam(q, "locale", params.Locale)
 	addStringParam(q, "availability", params.Availability)
+	addBoolParam(q, "verified", params.Verified)
+	addIntParam(q, "season", params.Season)
+	addIntParam(q, "episode", params.Episode)
 
 	var resp SearchResponse
 	if err := c.doJSON(ctx, "/api/v1/search", q, &resp); err != nil {
@@ -34,13 +38,16 @@ func (c *Client) Search(ctx context.Context, params SearchParams) (*SearchRespon
 }
 
 // Autocomplete returns title suggestions for the given query prefix.
-func (c *Client) Autocomplete(ctx context.Context, query string) ([]AutocompleteSuggestion, error) {
+func (c *Client) Autocomplete(ctx context.Context, params AutocompleteParams) ([]AutocompleteSuggestion, error) {
 	q := url.Values{}
-	q.Set("q", query)
+	q.Set("q", params.Query)
+	addStringParam(q, "locale", params.Locale)
 
-	var resp []AutocompleteSuggestion
+	var resp struct {
+		Suggestions []AutocompleteSuggestion `json:"suggestions"`
+	}
 	if err := c.doJSON(ctx, "/api/v1/autocomplete", q, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return resp.Suggestions, nil
 }

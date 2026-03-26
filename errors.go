@@ -49,6 +49,10 @@ func statusMessage(code int) string {
 	switch code {
 	case 400:
 		return "Bad request — check that all parameters are valid"
+	case 401:
+		return "Authentication required — provide a valid API key"
+	case 403:
+		return "Forbidden — insufficient permissions for this endpoint"
 	case 404:
 		return "Not found — the requested resource does not exist"
 	case 429:

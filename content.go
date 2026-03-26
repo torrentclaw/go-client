@@ -7,11 +7,11 @@ import (
 )
 
 // Popular returns the most popular content ranked by community engagement.
-// Both limit and page are optional; pass 0 to use server defaults.
-func (c *Client) Popular(ctx context.Context, limit, page int) (*PopularResponse, error) {
+func (c *Client) Popular(ctx context.Context, params PopularParams) (*PopularResponse, error) {
 	q := url.Values{}
-	addIntParam(q, "limit", limit)
-	addIntParam(q, "page", page)
+	addIntParam(q, "limit", params.Limit)
+	addIntParam(q, "page", params.Page)
+	addStringParam(q, "locale", params.Locale)
 
 	var resp PopularResponse
 	if err := c.doJSON(ctx, "/api/v1/popular", q, &resp); err != nil {
@@ -21,11 +21,11 @@ func (c *Client) Popular(ctx context.Context, limit, page int) (*PopularResponse
 }
 
 // Recent returns the most recently added content.
-// Both limit and page are optional; pass 0 to use server defaults.
-func (c *Client) Recent(ctx context.Context, limit, page int) (*RecentResponse, error) {
+func (c *Client) Recent(ctx context.Context, params RecentParams) (*RecentResponse, error) {
 	q := url.Values{}
-	addIntParam(q, "limit", limit)
-	addIntParam(q, "page", page)
+	addIntParam(q, "limit", params.Limit)
+	addIntParam(q, "page", params.Page)
+	addStringParam(q, "locale", params.Locale)
 
 	var resp RecentResponse
 	if err := c.doJSON(ctx, "/api/v1/recent", q, &resp); err != nil {

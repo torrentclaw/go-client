@@ -97,6 +97,8 @@ func TestStatusMessage(t *testing.T) {
 		want string
 	}{
 		{400, "Bad request — check that all parameters are valid"},
+		{401, "Authentication required — provide a valid API key"},
+		{403, "Forbidden — insufficient permissions for this endpoint"},
 		{404, "Not found — the requested resource does not exist"},
 		{429, "Rate limit exceeded — wait before retrying"},
 		{500, "TorrentClaw server error"},
