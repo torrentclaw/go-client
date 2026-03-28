@@ -16,7 +16,7 @@ Thank you for your interest in contributing! This guide will help you get starte
    ```
 4. **Make your changes**, write tests, and ensure everything passes
 5. **Commit** with a clear message (see [Commit Messages](#commit-messages))
-6. **Push** to your fork and [open a Pull Request](https://github.com/torrentclaw/torrentclaw-go-client/compare)
+6. **Push** to your fork and [open a Pull Request](https://github.com/torrentclaw/go-client/compare)
 
 ## Development Setup
 
@@ -110,7 +110,7 @@ refactor: extract retry logic into helper
 
 ## Reporting Bugs
 
-[Open an issue](https://github.com/torrentclaw/torrentclaw-go-client/issues/new?labels=bug) with:
+[Open an issue](https://github.com/torrentclaw/go-client/issues/new?labels=bug) with:
 
 - **Description** — what went wrong
 - **Steps to reproduce** — minimal code or commands to trigger the bug
@@ -120,7 +120,7 @@ refactor: extract retry logic into helper
 
 ## Requesting Features
 
-[Open an issue](https://github.com/torrentclaw/torrentclaw-go-client/issues/new?labels=enhancement) with:
+[Open an issue](https://github.com/torrentclaw/go-client/issues/new?labels=enhancement) with:
 
 - **Problem** — what are you trying to solve?
 - **Proposed solution** — how do you think it should work?
@@ -141,7 +141,7 @@ Violations can be reported to the project maintainers. All complaints will be re
 
 ## Questions?
 
-If you're unsure about something, [open a discussion](https://github.com/torrentclaw/torrentclaw-go-client/issues) or reach out on Discord (coming soon).
+If you're unsure about something, [open a discussion](https://github.com/torrentclaw/go-client/issues) or reach out on Discord (coming soon).
 
 ---
 

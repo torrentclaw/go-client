@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/torrentclaw/torrentclaw-go-client"
+	"github.com/torrentclaw/go-client"
 )
 
 func Example() {

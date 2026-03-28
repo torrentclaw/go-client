@@ -1,8 +1,8 @@
 # TorrentClaw Go Client
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/torrentclaw/torrentclaw-go-client.svg)](https://pkg.go.dev/github.com/torrentclaw/torrentclaw-go-client)
-[![CI](https://github.com/torrentclaw/torrentclaw-go-client/actions/workflows/ci.yml/badge.svg)](https://github.com/torrentclaw/torrentclaw-go-client/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/torrentclaw/torrentclaw-go-client)](https://goreportcard.com/report/github.com/torrentclaw/torrentclaw-go-client)
+[![Go Reference](https://pkg.go.dev/badge/github.com/torrentclaw/go-client.svg)](https://pkg.go.dev/github.com/torrentclaw/go-client)
+[![CI](https://github.com/torrentclaw/go-client/actions/workflows/ci.yml/badge.svg)](https://github.com/torrentclaw/go-client/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/torrentclaw/go-client)](https://goreportcard.com/report/github.com/torrentclaw/go-client)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-coming%20soon-7289da)](https://torrentclaw.com)
 
@@ -33,7 +33,7 @@ TorrentClaw is more than just an API. It's a growing ecosystem of tools:
 
 | Project | Language | Description |
 |---|---|---|
-| [torrentclaw-go-client](https://github.com/torrentclaw/torrentclaw-go-client) | Go | API client library **(this repo)** |
+| [torrentclaw-go-client](https://github.com/torrentclaw/go-client) | Go | API client library **(this repo)** |
 | torrentclaw-cli | Go | Command-line interface *(coming soon)* |
 | [torrentclaw-mcp](https://github.com/torrentclaw/torrentclaw-mcp) | TypeScript | MCP server for AI agents |
 | [truespec](https://github.com/torrentclaw/truespec) | Go | Verify real media specs from info hashes |
@@ -51,7 +51,7 @@ TorrentClaw is more than just an API. It's a growing ecosystem of tools:
 ## Installation
 
 ```bash
-go get github.com/torrentclaw/torrentclaw-go-client
+go get github.com/torrentclaw/go-client
 ```
 
 Requires Go 1.22 or later.
@@ -66,7 +66,7 @@ import (
     "fmt"
     "log"
 
-    torrentclaw "github.com/torrentclaw/torrentclaw-go-client"
+    torrentclaw "github.com/torrentclaw/go-client"
 )
 
 func main() {
@@ -254,7 +254,7 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 ## Reporting Bugs
 
-Found a bug? [Open an issue](https://github.com/torrentclaw/torrentclaw-go-client/issues/new?labels=bug&template=bug_report.md) on GitHub with:
+Found a bug? [Open an issue](https://github.com/torrentclaw/go-client/issues/new?labels=bug&template=bug_report.md) on GitHub with:
 
 - A clear description of the problem
 - Steps to reproduce
@@ -263,7 +263,7 @@ Found a bug? [Open an issue](https://github.com/torrentclaw/torrentclaw-go-clien
 
 ## Requesting Features
 
-Have an idea? [Open a feature request](https://github.com/torrentclaw/torrentclaw-go-client/issues/new?labels=enhancement&template=feature_request.md) on GitHub. We'd love to hear from you.
+Have an idea? [Open a feature request](https://github.com/torrentclaw/go-client/issues/new?labels=enhancement&template=feature_request.md) on GitHub. We'd love to hear from you.
 
 ## License
 
