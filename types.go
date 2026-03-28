@@ -79,7 +79,7 @@ type TorrentInfo struct {
 	Quality           *string           `json:"quality,omitempty"`
 	Codec             *string           `json:"codec,omitempty"`
 	SourceType        *string           `json:"sourceType,omitempty"`
-	SizeBytes         *string           `json:"sizeBytes,omitempty"`
+	SizeBytes         *int64            `json:"sizeBytes,omitempty"`
 	Seeders           int               `json:"seeders"`
 	Leechers          int               `json:"leechers"`
 	MagnetURL         *string           `json:"magnetUrl,omitempty"`

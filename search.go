@@ -72,7 +72,7 @@ type SearchParams struct {
 type SearchResult struct {
 	ID            int            `json:"id"`
 	IMDbID        *string        `json:"imdbId,omitempty"`
-	TMDbID        *string        `json:"tmdbId,omitempty"`
+	TMDbID        *int           `json:"tmdbId,omitempty"`
 	ContentType   string         `json:"contentType"`
 	Title         string         `json:"title"`
 	TitleOriginal *string        `json:"titleOriginal,omitempty"`
