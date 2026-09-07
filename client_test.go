@@ -110,6 +110,12 @@ func TestDoJSON_Success(t *testing.T) {
 		if got := r.Header.Get(headerSearchSource); got != searchSource {
 			t.Errorf("X-Search-Source = %q, want %q", got, searchSource)
 		}
+		// Compatibility handshake, not decoration: while this header is absent
+		// the API serves a provider outage as the legacy 502 instead of 424.
+		// Dropping it silently downgrades every request this client makes.
+		if got := r.Header.Get(headerClientFeatures); got != featureProviderFourXx {
+			t.Errorf("X-TC-Client-Features = %q, want %q", got, featureProviderFourXx)
+		}
 		if got := r.Header.Get("Accept"); got != "application/json" {
 			t.Errorf("Accept = %q, want application/json", got)
 		}

@@ -14,7 +14,7 @@ import (
 )
 
 // Version is the library version, used in the default User-Agent header.
-const Version = "0.2.0"
+const Version = "0.3.0"
 
 const (
 	defaultBaseURL   = "https://torrentclaw.com"
@@ -31,6 +31,21 @@ const (
 	headerUserAgent      = "User-Agent"
 	headerDebridProvider = "X-Debrid-Provider"
 	headerDebridKey      = "X-Debrid-Key"
+
+	// headerClientFeatures advertises response shapes this client understands,
+	// so the API can keep serving the old shape to versions that do not.
+	//
+	// featureProviderFourXx: "I treat a 4xx provider-failure status as
+	// retryable." The API reports an upstream debrid outage as 424 Failed
+	// Dependency to clients that send this, and as the legacy 502 to those that
+	// do not — because ≤0.2.0's IsRetryable() covered 5xx only, and flipping the
+	// status for everyone at once would have turned a retried provider hiccup
+	// into a hard error on every already-deployed agent.
+	//
+	// The API answers 502 for a provider outage while this token is absent, so
+	// dropping it is a compatibility regression, not a cleanup.
+	headerClientFeatures  = "X-TC-Client-Features"
+	featureProviderFourXx = "provider-4xx"
 
 	searchSource = "go-client"
 )
@@ -241,6 +256,7 @@ func (c *Client) doRaw(ctx context.Context, path string, query url.Values) ([]by
 func (c *Client) setHeaders(req *http.Request) {
 	req.Header.Set(headerUserAgent, c.userAgent)
 	req.Header.Set(headerSearchSource, searchSource)
+	req.Header.Set(headerClientFeatures, featureProviderFourXx)
 	if c.bearerToken != "" {
 		req.Header.Set(headerAuthorization, "Bearer "+c.bearerToken)
 	} else if c.apiKey != "" {
