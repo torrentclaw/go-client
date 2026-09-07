@@ -41,6 +41,11 @@ func TestAPIError_IsRetryable(t *testing.T) {
 		{401, false},
 		{403, false},
 		{404, false},
+		// 424 = the debrid provider failed us. Transient, so retryable, even
+		// though it is a 4xx: the API answers 424 (not 502) for a provider
+		// outage precisely so a third party's downtime is never reported as
+		// TorrentClaw failing. See IsRetryable's doc comment.
+		{424, true},
 		{429, true},
 		{500, true},
 		{502, true},

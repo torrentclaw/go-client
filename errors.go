@@ -25,9 +25,19 @@ func (e *APIError) Error() string {
 
 // IsRetryable reports whether the error is likely transient and the request
 // should be retried.
+// 424 is here because the API reports an upstream DEBRID PROVIDER failure
+// (TorBox/Real-Debrid down, unreachable, or unparseable) as 424 Failed
+// Dependency rather than 502. That is a transient condition and deserves the
+// same retry a 502 used to get; without this entry the switch to 424 would
+// silently turn a retried hiccup into a hard error for the caller.
+//
+// The API changed because a 5xx means TorrentClaw itself failed, and emitting
+// one for a third party's outage made the reverse proxy count the replica that
+// answered as dead — ~4.4k/day from check-cache alone, which is what emptied the
+// upstream pool and 502'd the whole site several times a day (Sept 2026).
 func (e *APIError) IsRetryable() bool {
 	switch e.StatusCode {
-	case 429, 500, 502, 503:
+	case 424, 429, 500, 502, 503:
 		return true
 	default:
 		return false
@@ -55,6 +65,8 @@ func statusMessage(code int) string {
 		return "Forbidden — insufficient permissions for this endpoint"
 	case 404:
 		return "Not found — the requested resource does not exist"
+	case 424:
+		return "The debrid provider is unavailable — not a TorrentClaw fault; retry shortly"
 	case 429:
 		return "Rate limit exceeded — wait before retrying"
 	case 500:
