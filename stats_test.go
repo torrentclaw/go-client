@@ -31,7 +31,7 @@ func TestStats_ServerError(t *testing.T) {
 func TestStats_EmptyIngestions(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(StatsResponse{
+		_ = json.NewEncoder(w).Encode(StatsResponse{
 			Content:          ContentStats{Movies: 100, Shows: 50, TMDbEnriched: 80},
 			Torrents:         TorrentStats{Total: 500, WithSeeders: 300, BySource: map[string]int{}},
 			RecentIngestions: []IngestionRecord{},
@@ -59,7 +59,7 @@ func TestStats_WithCompletedAt(t *testing.T) {
 	completedAt := "2025-01-15T10:05:00Z"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(StatsResponse{
+		_ = json.NewEncoder(w).Encode(StatsResponse{
 			Content:  ContentStats{},
 			Torrents: TorrentStats{BySource: map[string]int{}},
 			RecentIngestions: []IngestionRecord{

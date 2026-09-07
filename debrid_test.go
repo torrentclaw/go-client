@@ -34,7 +34,7 @@ func TestDebridCheckCache(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(DebridCheckCacheResponse{
+		_ = json.NewEncoder(w).Encode(DebridCheckCacheResponse{
 			Cached: map[string]bool{
 				"hash1": true,
 				"hash2": false,
@@ -78,7 +78,7 @@ func TestDebridAddMagnet(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(DebridAddMagnetResponse{
+		_ = json.NewEncoder(w).Encode(DebridAddMagnetResponse{
 			ID:     "torrent-id-1",
 			Cached: true,
 			Name:   "Test Movie",
@@ -105,7 +105,7 @@ func TestDebridAddMagnet(t *testing.T) {
 func TestDebridCheckCache_Unauthorized(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error":"Invalid API key"}`))
 	}))
 	defer srv.Close()
 

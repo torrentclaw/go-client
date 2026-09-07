@@ -26,7 +26,7 @@ func TestTorznab_Search(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/xml")
-		w.Write([]byte(xmlResp))
+		_, _ = w.Write([]byte(xmlResp))
 	}))
 	defer srv.Close()
 
@@ -59,7 +59,7 @@ func TestTorznab_TVSearch(t *testing.T) {
 		if got := q.Get("ep"); got != "5" {
 			t.Errorf("ep = %q, want 5", got)
 		}
-		w.Write([]byte("<rss/>"))
+		_, _ = w.Write([]byte("<rss/>"))
 	}))
 	defer srv.Close()
 
@@ -81,7 +81,7 @@ func TestTorznabCaps(t *testing.T) {
 		if got := r.URL.Query().Get("t"); got != "caps" {
 			t.Errorf("t = %q, want caps", got)
 		}
-		w.Write([]byte(capsXML))
+		_, _ = w.Write([]byte(capsXML))
 	}))
 	defer srv.Close()
 
@@ -98,7 +98,7 @@ func TestTorznabCaps(t *testing.T) {
 func TestTorznab_ServerError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("pro tier required"))
+		_, _ = w.Write([]byte("pro tier required"))
 	}))
 	defer srv.Close()
 

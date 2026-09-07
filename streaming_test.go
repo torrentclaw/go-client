@@ -25,7 +25,7 @@ func TestStreamingTop(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]StreamingTopItem{
+		_ = json.NewEncoder(w).Encode([]StreamingTopItem{
 			{Rank: 1, Title: "Top Movie", HasTorrents: true, MaxSeeders: 500},
 			{Rank: 2, Title: "Second Movie", HasTorrents: false, MaxSeeders: 0},
 		})
@@ -64,7 +64,7 @@ func TestStreamingTop_DefaultParams(t *testing.T) {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]StreamingTopItem{})
+		_ = json.NewEncoder(w).Encode([]StreamingTopItem{})
 	}))
 	defer srv.Close()
 

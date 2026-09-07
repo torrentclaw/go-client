@@ -47,7 +47,7 @@ func TestGetTorrentFile_RetryOn503(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/x-bittorrent")
-		w.Write(torrentData)
+		_, _ = w.Write(torrentData)
 	}))
 	defer srv.Close()
 

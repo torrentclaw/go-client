@@ -120,7 +120,7 @@ func TestDoJSON_Success(t *testing.T) {
 			t.Errorf("Accept = %q, want application/json", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"total": 42})
+		_ = json.NewEncoder(w).Encode(map[string]int{"total": 42})
 	}))
 	defer srv.Close()
 
@@ -150,7 +150,7 @@ func TestDoJSON_APIError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				w.Write([]byte(tt.body))
+				_, _ = w.Write([]byte(tt.body))
 			}))
 			defer srv.Close()
 
@@ -183,11 +183,11 @@ func TestDoJSON_RetryOn429(t *testing.T) {
 		attempts++
 		if attempts < 3 {
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte("rate limited"))
+			_, _ = w.Write([]byte("rate limited"))
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}))
 	defer srv.Close()
 
@@ -211,7 +211,7 @@ func TestDoJSON_RetryOn429(t *testing.T) {
 func TestDoJSON_RetryExhausted(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte("rate limited"))
+		_, _ = w.Write([]byte("rate limited"))
 	}))
 	defer srv.Close()
 
@@ -279,7 +279,7 @@ func TestAPIKeyHeader(t *testing.T) {
 			t.Errorf("X-API-Key = %q, want %q", got, "secret-key")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	}))
 	defer srv.Close()
 
@@ -294,7 +294,7 @@ func TestAPIKeyHeader(t *testing.T) {
 func TestDoJSON_InvalidJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer srv.Close()
 
@@ -312,7 +312,7 @@ func TestDoJSON_InvalidJSON(t *testing.T) {
 func TestDoJSON_ContextCanceledDuringBackoff(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte("rate limited"))
+		_, _ = w.Write([]byte("rate limited"))
 	}))
 	defer srv.Close()
 
@@ -346,7 +346,7 @@ func TestDoJSON_RetryOn502(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
 	}))
 	defer srv.Close()
 
@@ -373,7 +373,7 @@ func TestDoJSON_RetryOn503(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
 	}))
 	defer srv.Close()
 
@@ -396,7 +396,7 @@ func TestDoJSON_NoRetryOn401(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("unauthorized"))
+		_, _ = w.Write([]byte("unauthorized"))
 	}))
 	defer srv.Close()
 
@@ -423,7 +423,7 @@ func TestDoJSON_WithQueryParams(t *testing.T) {
 			t.Errorf("num = %q, want 42", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	}))
 	defer srv.Close()
 
@@ -602,7 +602,7 @@ func TestDoPost_Success(t *testing.T) {
 			t.Errorf("X-Custom = %q, want val", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"result":"ok"}`))
+		_, _ = w.Write([]byte(`{"result":"ok"}`))
 	}))
 	defer srv.Close()
 
@@ -620,7 +620,7 @@ func TestDoPost_Success(t *testing.T) {
 func TestDoPost_APIError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("bad request"))
+		_, _ = w.Write([]byte("bad request"))
 	}))
 	defer srv.Close()
 
@@ -648,7 +648,7 @@ func TestDoPost_RetryOnTransient(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"ok":true}`))
+		_, _ = w.Write([]byte(`{"ok":true}`))
 	}))
 	defer srv.Close()
 
@@ -680,7 +680,7 @@ func TestDoRaw_WithQueryParams(t *testing.T) {
 		if got := r.URL.Query().Get("t"); got != "caps" {
 			t.Errorf("t = %q, want caps", got)
 		}
-		w.Write([]byte("<xml/>"))
+		_, _ = w.Write([]byte("<xml/>"))
 	}))
 	defer srv.Close()
 

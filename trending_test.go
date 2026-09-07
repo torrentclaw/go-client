@@ -25,7 +25,7 @@ func TestTrending(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(TrendingResponse{
+		_ = json.NewEncoder(w).Encode(TrendingResponse{
 			Period: "weekly",
 			Items: []TrendingItem{
 				{ID: 1, Title: "Trending Movie", ContentType: "movie", MaxSeeders: 1000, TrendScore: 95},
@@ -62,7 +62,7 @@ func TestTrending_DefaultParams(t *testing.T) {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(TrendingResponse{Period: "daily", Total: 0, Page: 1, PageSize: 20})
+		_ = json.NewEncoder(w).Encode(TrendingResponse{Period: "daily", Total: 0, Page: 1, PageSize: 20})
 	}))
 	defer srv.Close()
 
