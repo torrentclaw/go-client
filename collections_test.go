@@ -18,7 +18,7 @@ func TestCollections(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(CollectionListResponse{
+		_ = json.NewEncoder(w).Encode(CollectionListResponse{
 			Items: []CollectionListItem{
 				{ID: 1, TMDbID: 10, Name: "Star Wars", MovieCount: 9, TotalSeeders: 5000, PartCount: 9},
 			},
@@ -59,7 +59,7 @@ func TestCollectionByID(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(CollectionDetail{
+		_ = json.NewEncoder(w).Encode(CollectionDetail{
 			ID:           1,
 			TMDbID:       10,
 			Name:         "Star Wars",
@@ -96,7 +96,7 @@ func TestCollectionByID(t *testing.T) {
 func TestCollectionByID_NotFound(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"Collection not found"}`))
+		_, _ = w.Write([]byte(`{"error":"Collection not found"}`))
 	}))
 	defer srv.Close()
 

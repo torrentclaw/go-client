@@ -17,7 +17,7 @@ func TestHealth(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(HealthResponse{
+		_ = json.NewEncoder(w).Encode(HealthResponse{
 			Status:    "ok",
 			Timestamp: "2026-03-26T10:00:00Z",
 			Uptime:    86400,
@@ -63,7 +63,7 @@ func TestMirrors(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(MirrorsResponse{
+		_ = json.NewEncoder(w).Encode(MirrorsResponse{
 			Mirrors: []MirrorInfo{
 				{URL: "https://torrentclaw.com", Label: "Primary", Primary: true},
 				{URL: "https://tc2.example.com", Label: "Mirror 1", Primary: false},

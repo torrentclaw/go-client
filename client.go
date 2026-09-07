@@ -166,7 +166,7 @@ func (c *Client) doJSON(ctx context.Context, path string, query url.Values, dst 
 
 		if resp.StatusCode == http.StatusOK {
 			err := json.NewDecoder(resp.Body).Decode(dst)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if err != nil {
 				return fmt.Errorf("torrentclaw: failed to decode response: %w", err)
 			}
@@ -174,7 +174,7 @@ func (c *Client) doJSON(ctx context.Context, path string, query url.Values, dst 
 		}
 
 		body := readErrorBody(resp)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		apiErr := newAPIError(resp.StatusCode, body)
 		lastErr = apiErr
@@ -225,7 +225,7 @@ func (c *Client) doRaw(ctx context.Context, path string, query url.Values) ([]by
 
 		if resp.StatusCode == http.StatusOK {
 			data, err := io.ReadAll(resp.Body)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if err != nil {
 				return nil, fmt.Errorf("torrentclaw: failed to read response body: %w", err)
 			}
@@ -233,7 +233,7 @@ func (c *Client) doRaw(ctx context.Context, path string, query url.Values) ([]by
 		}
 
 		body := readErrorBody(resp)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		apiErr := newAPIError(resp.StatusCode, body)
 		lastErr = apiErr
@@ -355,7 +355,7 @@ func (c *Client) doPost(ctx context.Context, path string, body any, dst any, ext
 
 		if resp.StatusCode == http.StatusOK {
 			err := json.NewDecoder(resp.Body).Decode(dst)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if err != nil {
 				return fmt.Errorf("torrentclaw: failed to decode response: %w", err)
 			}
@@ -363,7 +363,7 @@ func (c *Client) doPost(ctx context.Context, path string, body any, dst any, ext
 		}
 
 		errBody := readErrorBody(resp)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		apiErr := newAPIError(resp.StatusCode, errBody)
 		lastErr = apiErr

@@ -21,7 +21,7 @@ func TestPopular(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(PopularResponse{
+		_ = json.NewEncoder(w).Encode(PopularResponse{
 			Items: []PopularItem{
 				{ID: 1, Title: "The Matrix", ContentType: "movie", MaxSeeders: 500},
 			},
@@ -62,7 +62,7 @@ func TestPopular_DefaultParams(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(PopularResponse{Total: 0, Page: 1, PageSize: 12})
+		_ = json.NewEncoder(w).Encode(PopularResponse{Total: 0, Page: 1, PageSize: 12})
 	}))
 	defer srv.Close()
 
@@ -79,7 +79,7 @@ func TestPopular_WithLocale(t *testing.T) {
 			t.Errorf("locale = %q, want es", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(PopularResponse{Total: 0, Page: 1, PageSize: 12})
+		_ = json.NewEncoder(w).Encode(PopularResponse{Total: 0, Page: 1, PageSize: 12})
 	}))
 	defer srv.Close()
 
@@ -98,7 +98,7 @@ func TestRecent(t *testing.T) {
 
 		overview := "A great movie"
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(RecentResponse{
+		_ = json.NewEncoder(w).Encode(RecentResponse{
 			Items: []RecentItem{
 				{ID: 10, Title: "New Movie", ContentType: "movie", Overview: &overview, CreatedAt: "2025-01-15T10:00:00Z"},
 			},
@@ -134,7 +134,7 @@ func TestRecent_WithLocale(t *testing.T) {
 			t.Errorf("locale = %q, want fr", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(RecentResponse{Total: 0, Page: 1, PageSize: 12})
+		_ = json.NewEncoder(w).Encode(RecentResponse{Total: 0, Page: 1, PageSize: 12})
 	}))
 	defer srv.Close()
 
@@ -155,7 +155,7 @@ func TestWatchProviders(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(WatchProvidersResponse{
+		_ = json.NewEncoder(w).Encode(WatchProvidersResponse{
 			ContentID: 42,
 			Country:   "US",
 			Providers: WatchProviders{
@@ -190,7 +190,7 @@ func TestWatchProviders(t *testing.T) {
 func TestWatchProviders_WithVPN(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(WatchProvidersResponse{
+		_ = json.NewEncoder(w).Encode(WatchProvidersResponse{
 			ContentID: 42,
 			Country:   "AR",
 			Providers: WatchProviders{},
@@ -226,7 +226,7 @@ func TestCredits(t *testing.T) {
 		directorID := 525
 		tmdbID := 6193
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(CreditsResponse{
+		_ = json.NewEncoder(w).Encode(CreditsResponse{
 			ContentID:      42,
 			Director:       &director,
 			DirectorTmdbID: &directorID,
@@ -269,7 +269,7 @@ func TestStats(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(StatsResponse{
+		_ = json.NewEncoder(w).Encode(StatsResponse{
 			Content: ContentStats{
 				Movies:       50000,
 				Shows:        10000,
@@ -340,7 +340,7 @@ func TestGetTorrentFile(t *testing.T) {
 			t.Errorf("path = %q", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/x-bittorrent")
-		w.Write(torrentData)
+		_, _ = w.Write(torrentData)
 	}))
 	defer srv.Close()
 
@@ -357,7 +357,7 @@ func TestGetTorrentFile(t *testing.T) {
 func TestGetTorrentFile_NotFound(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
+		_, _ = w.Write([]byte("not found"))
 	}))
 	defer srv.Close()
 
@@ -420,7 +420,7 @@ func TestWatchProviders_NoCountry(t *testing.T) {
 			t.Error("country param should not be set when empty")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(WatchProvidersResponse{
+		_ = json.NewEncoder(w).Encode(WatchProvidersResponse{
 			ContentID:   42,
 			Country:     "US",
 			Providers:   WatchProviders{},
@@ -439,7 +439,7 @@ func TestWatchProviders_NoCountry(t *testing.T) {
 func TestCredits_ServerError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
+		_, _ = w.Write([]byte("not found"))
 	}))
 	defer srv.Close()
 
@@ -453,7 +453,7 @@ func TestCredits_ServerError(t *testing.T) {
 func TestCredits_NilDirector(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(CreditsResponse{
+		_ = json.NewEncoder(w).Encode(CreditsResponse{
 			ContentID: 42,
 			Director:  nil,
 			Cast:      []CastMember{},

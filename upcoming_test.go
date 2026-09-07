@@ -22,7 +22,7 @@ func TestUpcoming(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(UpcomingResponse{
+		_ = json.NewEncoder(w).Encode(UpcomingResponse{
 			Items: []UpcomingItem{
 				{ID: 1, Title: "Future Movie", ContentType: "movie", ReleaseDate: "2026-05-01", HasTorrents: false},
 			},

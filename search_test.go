@@ -43,7 +43,7 @@ func TestSearch(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SearchResponse{
+		_ = json.NewEncoder(w).Encode(SearchResponse{
 			Total:    1,
 			Page:     1,
 			PageSize: 10,
@@ -134,7 +134,7 @@ func TestSearch_AllParams(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SearchResponse{Total: 0, Page: 2, PageSize: 25})
+		_ = json.NewEncoder(w).Encode(SearchResponse{Total: 0, Page: 2, PageSize: 25})
 	}))
 	defer srv.Close()
 
@@ -179,7 +179,7 @@ func TestSearch_EmptyOptionalParams(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SearchResponse{Total: 0, Page: 1, PageSize: 20})
+		_ = json.NewEncoder(w).Encode(SearchResponse{Total: 0, Page: 1, PageSize: 20})
 	}))
 	defer srv.Close()
 
@@ -196,7 +196,7 @@ func TestSearch_ParsedSeasonEpisode(t *testing.T) {
 	fuzzy := true
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SearchResponse{
+		_ = json.NewEncoder(w).Encode(SearchResponse{
 			Total:         1,
 			Page:          1,
 			PageSize:      20,
@@ -234,7 +234,7 @@ func TestAutocomplete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"suggestions": []AutocompleteSuggestion{
 				{ID: 1, Title: "Inception", ContentType: "movie"},
 			},
@@ -261,7 +261,7 @@ func TestAutocomplete_WithLocale(t *testing.T) {
 			t.Errorf("locale = %q, want es", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"suggestions": []AutocompleteSuggestion{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"suggestions": []AutocompleteSuggestion{}})
 	}))
 	defer srv.Close()
 
@@ -276,7 +276,7 @@ func TestAutocomplete_WithMovieCount(t *testing.T) {
 	movieCount := 5
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"suggestions": []AutocompleteSuggestion{
 				{ID: 1, Title: "Star Wars", ContentType: "collection", MovieCount: &movieCount},
 			},
@@ -330,7 +330,7 @@ func TestAutocomplete_ServerError(t *testing.T) {
 func TestAutocomplete_EmptyResults(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"suggestions": []AutocompleteSuggestion{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"suggestions": []AutocompleteSuggestion{}})
 	}))
 	defer srv.Close()
 
